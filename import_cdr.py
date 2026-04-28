@@ -30,7 +30,7 @@ from dotenv import load_dotenv
 
 # ─── Configuração ─────────────────────────────────────────────────────────────
 
-load_dotenv()
+load_dotenv(override=True)
 
 DB_CONFIG: dict = {
     "host":     os.environ["MYSQL_HOST"],
@@ -77,6 +77,15 @@ def get_connection() -> mysql.connector.MySQLConnection:
     return mysql.connector.connect(**DB_CONFIG)
 
 
+def ensure_connection(conn: mysql.connector.MySQLConnection) -> mysql.connector.MySQLConnection:
+    """Faz ping e reconecta se a conexão caiu (ex: wait_timeout do MySQL)."""
+    try:
+        conn.ping(reconnect=True, attempts=3, delay=2)
+    except Exception:
+        conn = get_connection()
+    return conn
+
+
 def sha256_file(path: Path) -> str:
     """Calcula o SHA-256 de um arquivo em blocos (suporta arquivos grandes)."""
     h = hashlib.sha256()
@@ -105,7 +114,7 @@ def move_file(src: Path, dst: Path) -> None:
 
 
 def find_or_create_batch(
-    conn,
+    conn: mysql.connector.MySQLConnection,
     zip_path: Path,
     zip_hash: str,
     brand: str,
@@ -625,9 +634,14 @@ def main() -> None:
 
         log.info("Encontrados %d ZIP(s) para processar.", len(zip_files))
         for zip_path in zip_files:
+            # Garante conexão viva antes de cada ZIP (evita wait_timeout do MySQL)
+            conn = ensure_connection(conn)
             process_zip(conn, zip_path)
     finally:
-        conn.close()
+        try:
+            conn.close()
+        except Exception:
+            pass
 
     log.info("Importação concluída.")
 
