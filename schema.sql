@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS cdr_raw (
     originator_hidden                   VARCHAR(10)    NULL,
     destination                         VARCHAR(100)   NULL,
     day                                 VARCHAR(20)    NULL,
-    start_date                          VARCHAR(30)    NULL COMMENT 'Armazenado como string raw do CSV; formato esperado: YYYY-MM-DD HH:MM:SS',
+    start_date                          VARCHAR(30)    NULL COMMENT 'Armazenado como string raw do CSV (formato esperado: YYYY-MM-DD HH:MM:SS)',
     parse_day                           VARCHAR(20)    NULL,
     parse_date                          VARCHAR(30)    NULL,
     traffic_units                       DECIMAL(20,4)  NULL COMMENT 'DATA=bytes, VOICE=segundos, SMS=unidades',
@@ -119,7 +119,7 @@ CREATE TABLE IF NOT EXISTS cdr_raw (
 
 CREATE OR REPLACE VIEW vw_cdr_monthly_by_line AS
 SELECT
-    LEFT(start_date, 7)                                                          AS year_month,
+    LEFT(start_date, 7)                                                          AS `year_month`,
     msisdn,
     SUM(CASE WHEN service_type = 'DATA'  THEN COALESCE(traffic_units, 0) ELSE 0 END)       AS data_bytes,
     SUM(CASE WHEN service_type = 'DATA'  THEN COALESCE(traffic_units, 0) ELSE 0 END)
@@ -137,7 +137,7 @@ GROUP BY LEFT(start_date, 7), msisdn;
 
 CREATE OR REPLACE VIEW vw_cdr_monthly_summary AS
 SELECT
-    LEFT(start_date, 7)                                                          AS year_month,
+    LEFT(start_date, 7)                                                          AS `year_month`,
     COUNT(*)                                                                     AS total_lines,
     SUM(CASE WHEN service_type = 'DATA'  THEN COALESCE(traffic_units, 0) ELSE 0 END)       AS data_bytes,
     SUM(CASE WHEN service_type = 'DATA'  THEN COALESCE(traffic_units, 0) ELSE 0 END)
